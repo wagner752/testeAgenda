@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Editor XML</title>
+    <style>
+        .contact {
+            border: 1px solid #ccc;
+            margin: 10px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Editor XML</h1>
+    
+    <div id="contacts">
+        <!-- Contatos do XML serão inseridos aqui -->
+    </div>
+
+    <button onclick="addContact()">Adicionar Contato</button>
+    <button onclick="saveXML()">Salvar XML</button>
+
+    <script>
+        let xmlDoc; // Variável para armazenar o documento XML
+
+        // Função para carregar e exibir o arquivo XML
+        function loadXMLFile() {
+            const xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState === 4 && this.status === 200) {
+                    const parser = new DOMParser();
+                    xmlDoc = parser.parseFromString(this.responseText, "text/xml");
+                    displayContacts();
+                }
+            };
+            xhttp.open("GET", "contacts.xml", true);
+            xhttp.send();
+        }
+
+        // Função para exibir os contatos do XML na página
+        function displayContacts() {
+            const contactsDiv = document.getElementById("contacts");
+            contactsDiv.innerHTML = "";
+
+            const contacts = xmlDoc.getElementsByTagName("contact");
+            for (let i = 0; i < contacts.length; i++) {
+                const contact = contacts[i];
+                const name = contact.getAttribute("name");
+                const number = contact.getAttribute("number");
+                const contactDiv = document.createElement("div");
+                contactDiv.className = "contact";
+                contactDiv.innerHTML = `
+                    <label for="name${i}">Nome:</label>
+                    <input type="text" id="name${i}" value="${name}">
+                    <label for="number${i}">Número:</label>
+                    <input type="text" id="number${i}" value="${number}">
+                    <button onclick="deleteContact(${i})">Deletar</button>
+                `;
+                contactsDiv.appendChild(contactDiv);
+            }
+        }
+
+        // Função para adicionar um novo contato
+        function addContact() {
+            const contactsDiv = document.getElementById("contacts");
+            const contactDiv = document.createElement("div");
+            const index = xmlDoc.getElementsByTagName("contact").length;
+            contactDiv.className = "contact";
+            contactDiv.innerHTML = `
+                <label for="name${index}">Nome:</label>
+                <input type="text" id="name${index}" value="">
+                <label for="number${index}">Número:</label>
+                <input type="text" id="number${index}" value="">
+                <button onclick="deleteContact(${index})">Deletar</button>
+            `;
+            contactsDiv.appendChild(contactDiv);
+
+            // Cria um novo elemento <contact> no XML
+            const newContact = xmlDoc.createElement("contact");
+            newContact.setAttribute("name", "");
+            newContact.setAttribute("number", "");
+            xmlDoc.documentElement.appendChild(newContact);
+        }
+
+        // Função para deletar um contato
+        function deleteContact(index) {
+            const contactsDiv = document.getElementById("contacts");
+            contactsDiv.removeChild(contactsDiv.childNodes[index]);
+
+            // Remove o elemento <contact> correspondente do XML
+            const contacts = xmlDoc.getElementsByTagName("contact");
+            xmlDoc.documentElement.removeChild(contacts[index]);
+        }
+
+        // Função para salvar o XML com as edições
+        function saveXML() {
+            const xmlString = new XMLSerializer().serializeToString(xmlDoc);
+
+            // Envia o XML para o servidor (substitui o arquivo original)
+            const xhttp = new XMLHttpRequest();
+            xhttp.open("POST", 'save.php', true); // Substitua "save.php" pelo seu servidor de destino
+            xhttp.setRequestHeader("Content-type", "application/xml");
+            xhttp.send(xmlString);
+        }
+
+        // Carrega o XML ao iniciar a página
+        loadXMLFile();
+    </script>
+</body>
+</html>
